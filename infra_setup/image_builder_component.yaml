@@ -1,0 +1,92 @@
+name: InstallDeepracer
+description: Install Deepracer for cloud
+schemaVersion: 1.0
+
+parameters:
+  - versionTag:
+      type: string
+      description: Version tag of git branch to clone
+
+phases:
+  - name: build
+    steps:
+      - name: InstallDeps
+        action: ExecuteBash
+        inputs:
+          commands:
+            - |
+                # run script as different user
+                runuser --login ubuntu << 'EOF'
+                
+                cd /home/ubuntu
+                source .profile
+                
+                # Installing packages
+                sudo apt install --no-install-recommends -y jq awscli python3-boto3
+                
+                # include net.ipv4.vs.xxxxxx points
+                sudo bash -c 'echo ip_vs >> /etc/modules-load.d/modules.conf'
+                
+                # Installing Docker
+                sudo apt install -y --no-install-recommends docker.io docker-buildx docker-compose-v2
+                sudo systemctl enable docker
+                sudo systemctl restart docker
+                
+                # allow docker access
+                sudo usermod -a -G docker ubuntu
+                
+                EOF
+                
+      - name: RebootStep
+        action: Reboot
+        onFailure: Abort
+        maxAttempts: 2
+        inputs:
+          delaySeconds: 10
+                
+      - name: CloneAndInit
+        action: ExecuteBash
+        inputs:
+          commands:
+            - |
+                # run script as different user
+                runuser --login ubuntu << 'EOF'
+                
+                cd /home/ubuntu
+                source .profile
+                
+                git clone -b {{ versionTag }} https://github.com/aws-deepracer-community/deepracer-for-cloud.git
+                
+                cd deepracer-for-cloud/bin
+                ./init.sh -c aws -a cpu -s compose
+                
+                cd /home/ubuntu
+                
+                cat << 'EOFB' > do_startup.sh
+                #!/bin/bash
+                cd /home/ubuntu
+                source .profile
+                
+                USER_BUCKET_NAME=$(cat user-bucket-name)
+                
+                aws s3 cp s3://$USER_BUCKET_NAME/startup_files/begin_dr.sh begin_dr.sh
+                bash begin_dr.sh
+                EOFB
+                
+                chmod u+x do_startup.sh
+                
+                cat << 'EOFB' > my_crontab
+                SHELL=/bin/bash
+                @reboot /home/ubuntu/do_startup.sh > /home/ubuntu/user_startup.log 2>&1
+                EOFB
+                
+                crontab -u ubuntu my_crontab
+                
+                EOF
+
+      - name: RebootStepA
+        action: Reboot
+        onFailure: Abort
+        maxAttempts: 2
+        inputs:
+          delaySeconds: 10
