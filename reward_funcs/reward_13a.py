@@ -44,7 +44,7 @@ def reward_function(params):
     scaling_wt = 2.0
 
     # Raise progress to this exponent
-    progress_power = 1.4
+    progress_power = 1.3
 
     # Timestep assumed for progress computations
     steps_per_sec = 15
@@ -67,7 +67,7 @@ def reward_function(params):
     # progress into a metres per second value based on the track length
     # initialize a default progress reward of 1.0
     progress_reward = 1.0  # default
-    steps_in_history = [i for i in range(nsteps - 10, nsteps)
+    steps_in_history = [i for i in range(nsteps - 20, nsteps)
                         if i in history]
     if any(not history[i]['all_wheels_on_track'] for i in steps_in_history):
         # went off the track
