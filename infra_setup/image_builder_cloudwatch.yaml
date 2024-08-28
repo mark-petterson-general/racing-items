@@ -1,0 +1,96 @@
+name: ConfigureCloudwatchAgent
+description: Configure Cloudwatch Agent
+schemaVersion: 1.0
+
+phases:
+  - name: build
+    steps:
+      - name: Configure
+        action: ExecuteBash
+        inputs:
+          commands:
+            - |
+                # run script as different user
+                runuser --login ubuntu << 'EOF'
+                
+                cd /home/ubuntu
+                source .profile
+                
+                cat << 'EOFB' > cloudwatch-agent-config.json
+                {
+                  "agent": {
+                    "metrics_collection_interval": 60,
+                    "run_as_user": "cwagent"
+                  },
+                  "metrics": {
+                    "aggregation_dimensions": [
+                      [
+                        "InstanceId"
+                      ]
+                    ],
+                    "append_dimensions": {
+                      "AutoScalingGroupName": "${aws:AutoScalingGroupName}",
+                      "ImageId": "${aws:ImageId}",
+                      "InstanceId": "${aws:InstanceId}",
+                      "InstanceType": "${aws:InstanceType}"
+                    },
+                    "metrics_collected": {
+                      "cpu": {
+                        "measurement": [
+                          "cpu_usage_idle",
+                          "cpu_usage_iowait",
+                          "cpu_usage_user",
+                          "cpu_usage_system"
+                        ],
+                        "metrics_collection_interval": 60,
+                        "resources": [
+                          "*"
+                        ],
+                        "totalcpu": false
+                      },
+                      "disk": {
+                        "measurement": [
+                          "used_percent",
+                          "inodes_free"
+                        ],
+                        "metrics_collection_interval": 60,
+                        "resources": [
+                          "*"
+                        ]
+                      },
+                      "diskio": {
+                        "measurement": [
+                          "io_time"
+                        ],
+                        "metrics_collection_interval": 60,
+                        "resources": [
+                          "*"
+                        ]
+                      },
+                      "mem": {
+                        "measurement": [
+                          "mem_used_percent"
+                        ],
+                        "metrics_collection_interval": 60
+                      },
+                      "swap": {
+                        "measurement": [
+                          "swap_used_percent"
+                        ],
+                        "metrics_collection_interval": 60
+                      }
+                    }
+                  }
+                }
+                EOFB
+
+                sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:cloudwatch-agent-config.json
+
+                EOF
+                
+      - name: RebootStep
+        action: Reboot
+        onFailure: Abort
+        maxAttempts: 2
+        inputs:
+          delaySeconds: 10
