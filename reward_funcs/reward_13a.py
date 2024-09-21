@@ -15,7 +15,7 @@ def reward_function(params):
 
     The progress reward is then computed as the effective speed, but
     don't reward if any wheels go off-track at any time during
-    the previous 10 steps.
+    the previous 20 steps.
 
     The centre and progress are multiplied together.
 
@@ -27,7 +27,7 @@ def reward_function(params):
     track_width = params['track_width']
     distance_from_center = params['distance_from_center']
     progress = params['progress']  # percentage
-    nsteps = int(params['steps'])  # 1/10 second
+    nsteps = int(params['steps'])  # 1/15 second
     track_length = params['track_length']  # metres
     all_wheels_on_track = params['all_wheels_on_track']
 
