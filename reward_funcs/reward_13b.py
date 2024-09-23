@@ -16,8 +16,6 @@ def reward_function(params):
 
     '''
 
-    const_e = 2.718281828
-
     # Read input parameters
     progress = params['progress']  # percentage
     nsteps = int(params['steps'])  # 1/10 second
@@ -53,7 +51,7 @@ def reward_function(params):
         # went off the track
         progress_reward = 0.001
     else:
-        if len(steps_in_history) > 0:
+        if len(steps_in_history) > 16:
             i = steps_in_history[0]
             effective_speed = (
                 progress - history[i]['progress']
