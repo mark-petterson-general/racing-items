@@ -255,11 +255,14 @@ def reward_function(params):
     }
 
     # Scaling factor for effective speed
-    scale_fact = 4.0
+    scale_fact = 2.0
+
+    # Exponential scaling factor
+    exp_fact = 1.7
 
     # If the effective speed is below that from the waypoint list
     # by this ratio then reward is zero
-    margin_ratio = 0.75
+    margin_ratio = 0.61
 
     # Timestep assumed for progress computations
     steps_per_sec = 15
@@ -288,4 +291,4 @@ def reward_function(params):
             # never negative
             progress_reward = max(0.001, progress_reward)
 
-    return progress_reward
+    return progress_reward ** exp_fact
